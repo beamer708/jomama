@@ -81,6 +81,27 @@ schema.sql              # PostgreSQL schema (run once)
 
    Slash commands are synced on startup (global if `GUILD_ID` is unset, else to that guild).
 
+## Hosting (Pterodactyl / game panels)
+
+If you see **`bash: main.py: No such file or directory`** or the bot doesn’t start:
+
+1. **Upload layout**  
+   Upload the project so the **container root** (e.g. `/home/container/`) contains `main.py`, `bot/`, `requirements.txt`, `.env`, etc.  
+   - If you upload a zip, extract it so that `main.py` is at `/home/container/main.py`, not inside a subfolder.
+
+2. **Use the start script (recommended)**  
+   - Set **Startup / Start Script** to: `start.sh`  
+   - Or set the variable that runs a bash file (e.g. `START_BASH_FILE=start.sh`) so the panel runs `bash start.sh`.  
+   - `start.sh` switches to the project directory and runs `python main.py`, so the path is correct even if the panel’s default directory is wrong.
+
+3. **If you use “Python startup file” instead**  
+   - Set the Python start file to: `main.py`  
+   - Set the **working directory** to the container root (where `main.py` and `bot/` live).  
+   - The panel must run: `python /home/container/main.py` (or equivalent), not `main.py` by itself.
+
+4. **Requirements**  
+   - Point the panel at `requirements.txt` (often `REQUIREMENTS_FILE=requirements.txt`) so it runs `pip install -r requirements.txt` before start.
+
 ## Features
 
 ### Ticket system
