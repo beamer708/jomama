@@ -1,149 +1,28 @@
 # Unity Vault Bot
 
-Production-grade Discord bot for the [Unity Vault](https://www.unityvault.space/) community. Provides ticket-based support, server automation, and a showcase-ready helper experience.
-
-## Tech stack (Python)
-
-- **Runtime:** Python 3.12.12+
-- **Library:** discord.py 2.x (slash commands, modals, buttons, select menus)
-- **Database:** PostgreSQL with asyncpg
-- **Config:** `.env` via python-dotenv (no hardcoded secrets)
-
-## Project structure
-
-```
-bot/
-├── commands.py        # Slash commands (ping, help, status, ticket-panel, config)
-├── views.py            # Ticket panel, type select, modals, close/escalate buttons
-├── config.py           # Env loading
-├── constants.py        # Brand, component IDs, rate limits
-├── database/
-│   ├── pool.py         # Async PG pool
-│   └── queries.py      # Guild, ticket, rate limit queries
-├── services/
-│   ├── ticket.py       # Create/close/escalate ticket channels
-│   ├── logging.py      # Mod and ticket logs
-│   └── rate_limit.py   # Per-user rate limiting
-└── utils/
-    ├── embeds.py       # Themed embeds
-    ├── permissions.py  # Staff / ticket permission checks
-    └── validators.py   # Modal input validation
-main.py                 # Entry: client, events, persistent views, tree sync
-schema.sql              # PostgreSQL schema (run once)
-```
+Discord bot for Unity Vault. Node.js v24, TypeScript, discord.js v14, MongoDB (Mongoose).
 
 ## Setup
 
-1. **Python 3.12.12**
+1. Node.js v24+
+2. Copy `.env.example` to `.env`, set `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DATABASE_URL`
+3. `npm install`
+4. `npm run build`
+5. `npm start`
 
-   Use pyenv, asdf, or official installer. Check: `python --version`
+## Structure
 
-2. **Install**
+```
+src/
+  commands/   # Slash commands (ping, help, status)
+  events/     # ready, interactionCreate
+  models/     # Mongoose models (e.g. Ticket)
+  database/   # connect.ts
+  index.ts
+```
 
-   ```bash
-   cd UnityVaultBot
-   pip install -r requirements.txt
-   # or: pip install -e .
-   ```
+## Commands
 
-3. **Environment**
-
-   Copy `.env.example` to `.env` and set:
-
-   - `DISCORD_TOKEN` – Bot token from [Discord Developer Portal](https://discord.com/developers/applications)
-   - `DISCORD_CLIENT_ID` – Application ID (same app)
-   - `DATABASE_URL` – PostgreSQL connection string, e.g.  
-     `postgresql://user:password@localhost:5432/unityvault_bot`
-
-   Optional:
-
-   - `GUILD_ID` – If set, slash commands sync to this guild only (faster during development)
-   - `LOG_CHANNEL_ID` – Default log channel for tickets and mod actions
-   - `TICKET_CATEGORY_ID` – Category under which ticket channels are created
-   - `SUPPORT_ROLE_IDS` – Comma-separated role IDs that can manage tickets
-   - `ONBOARDING_CHANNEL_ID` – Channel for welcome messages on member join
-
-4. **Database**
-
-   Create the schema (one-time):
-
-   ```bash
-   psql "$DATABASE_URL" -f schema.sql
-   ```
-
-   If you see "type ticket_type already exists", the schema is already applied.
-
-5. **Run**
-
-   ```bash
-   python main.py
-   ```
-
-   Slash commands are synced on startup (global if `GUILD_ID` is unset, else to that guild).
-
-## Hosting (Pterodactyl / game panels)
-
-If you see **`bash: main.py: No such file or directory`** or the bot doesn’t start:
-
-1. **Upload layout**  
-   Upload the project so the **container root** (e.g. `/home/container/`) contains `main.py`, `bot/`, `requirements.txt`, `.env`, etc.  
-   - If you upload a zip, extract it so that `main.py` is at `/home/container/main.py`, not inside a subfolder.
-
-2. **Use the start script (recommended)**  
-   - Set **Startup / Start Script** to: `start.sh`  
-   - Or set the variable that runs a bash file (e.g. `START_BASH_FILE=start.sh`) so the panel runs `bash start.sh`.  
-   - `start.sh` switches to the project directory and runs `python main.py`, so the path is correct even if the panel’s default directory is wrong.
-
-3. **If you use “Python startup file” instead**  
-   - Set the Python start file to: `main.py`  
-   - Set the **working directory** to the container root (where `main.py` and `bot/` live).  
-   - The panel must run: `python /home/container/main.py` (or equivalent), not `main.py` by itself.
-
-4. **Requirements**  
-   - Point the panel at `requirements.txt` (often `REQUIREMENTS_FILE=requirements.txt`) so it runs `pip install -r requirements.txt` before start.
-
-## Features
-
-### Ticket system
-
-- **Panel:** Staff run `/ticket-panel` in the desired channel; the panel shows an **Open a ticket** button.
-- **Flow:** User clicks the button → selects type (Support, Report, Partnership, Suggestion) → modal with subject and description → ticket channel is created.
-- **In-ticket:** Close (with confirmation) and Escalate buttons; only the opener or staff can close; only staff can escalate.
-- **Logging:** Ticket created/closed/escalated events are sent to the configured log channel.
-- **Limits:** Per-user rate limit on opening tickets; max 2 open tickets per user.
-
-### Commands
-
-| Command          | Description                                | Who        |
-|------------------|--------------------------------------------|------------|
-| `/ping`          | Bot latency and WebSocket ping             | Everyone   |
-| `/help`          | Bot info and command list                  | Everyone   |
-| `/status`        | Health check (DB, WS, uptime)              | Everyone   |
-| `/ticket-panel`  | Post the ticket panel in this channel      | Staff only |
-| `/config`        | View server config (log channel, roles…)  | Staff only |
-
-### Components (custom IDs)
-
-- `ticket:open` – Button to start ticket flow.
-- `ticket:select:type` – Select menu for ticket type.
-- Modals for support/report/partnership/suggestion – Submit creates the ticket.
-- `ticket:close` – Confirmation step; `ticket:close:confirm` – Close and delete channel.
-- `ticket:escalate` – Mark ticket escalated (staff only).
-
-Handling lives in `bot/views.py` (persistent views and modals).
-
-### Security and reliability
-
-- **Rate limiting:** Slash commands, ticket creation (DB-backed).
-- **Permissions:** Ticket management and panel/config require staff (support roles or admin-level permissions).
-- **State:** Ticket and config state in PostgreSQL.
-
-## Configuration
-
-- **Branding:** `bot/constants.py` (BRAND).
-- **Rate limits:** `bot/constants.py` (RATE_LIMITS).
-- **Max open tickets per user:** `bot/constants.py` (MAX_OPEN_TICKETS_PER_USER).
-
-## License
-
-Private / internal use for Unity Vault. Adjust as needed for your project.
+- `/ping` — Latency
+- `/help` — Command list
+- `/status` — Bot and database status
